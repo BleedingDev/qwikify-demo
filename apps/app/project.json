@@ -1,0 +1,114 @@
+{
+  "name": "app",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "apps/app/src",
+  "targets": {
+    "build": {
+      "executor": "qwik-nx:build",
+      "options": {
+        "runSequence": [
+          "app:build.client",
+          "app:build.ssr"
+        ],
+        "outputPath": "dist/apps/app",
+        "postcssConfig": "apps/app/postcss.config.js"
+      },
+      "configurations": {
+        "preview": {},
+        "production": {}
+      }
+    },
+    "build.client": {
+      "executor": "@nx/vite:build",
+      "options": {
+        "outputPath": "dist/apps/app",
+        "configFile": "apps/app/vite.config.ts"
+      }
+    },
+    "build.ssr": {
+      "executor": "@nx/vite:build",
+      "defaultConfiguration": "preview",
+      "options": {
+        "outputPath": "dist/apps/app"
+      },
+      "configurations": {
+        "preview": {
+          "ssr": "src/entry.preview.tsx",
+          "mode": "production"
+        },
+        "production": {
+          "configFile": "apps/app/adapters/cloudflare-pages/vite.config.ts"
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "options": {
+        "buildTarget": "app:build",
+        "port": 4300
+      }
+    },
+    "test": {
+      "executor": "@nx/vite:test",
+      "outputs": [
+        "../../coverage/apps/app"
+      ],
+      "options": {
+        "passWithNoTests": true,
+        "reportsDirectory": "../../coverage/apps/app"
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "options": {
+        "buildTarget": "app:build.client",
+        "mode": "ssr",
+        "port": 4200
+      }
+    },
+    "serve.debug": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node --inspect-brk ../../node_modules/vite/bin/vite.js --mode ssr --force",
+        "cwd": "apps/app"
+      }
+    },
+    "lint": {
+      "executor": "@nx/linter:eslint",
+      "outputs": [
+        "{options.outputFile}"
+      ],
+      "options": {
+        "lintFilePatterns": [
+          "apps/app/**/*.{ts,tsx,js,jsx}"
+        ]
+      }
+    },
+    "deploy": {
+      "executor": "@k11r/nx-cloudflare-wrangler:deploy-page",
+      "options": {
+        "dist": "dist/apps/app/client"
+      },
+      "dependsOn": [
+        "build-cloudflare"
+      ]
+    },
+    "preview-cloudflare": {
+      "executor": "@k11r/nx-cloudflare-wrangler:serve-page",
+      "options": {
+        "dist": "dist/apps/app/client"
+      },
+      "dependsOn": [
+        "build-cloudflare"
+      ]
+    },
+    "build-cloudflare": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "npx nx run app:build:production"
+      }
+    }
+  },
+  "tags": []
+}
